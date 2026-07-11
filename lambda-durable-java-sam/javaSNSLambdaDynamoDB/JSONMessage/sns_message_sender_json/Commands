@@ -1,0 +1,4 @@
+ava -classpath <Location of Code>/JavaExamples/sns_message_sender_json/target/json-sns-producer-0.0.1-SNAPSHOT.jar sns.producer.JsonSNSProducer <TopicName> <Key To Identify This Set Of Messages> <Number Of Messages>
+
+Example:
+java -classpath ~/environment/JavaExamples/sns_message_sender_json/target/json-sns-producer-0.0.1-SNAPSHOT.jar sns.producer.JsonSNSProducer LambdaSNSTopic Message01 100

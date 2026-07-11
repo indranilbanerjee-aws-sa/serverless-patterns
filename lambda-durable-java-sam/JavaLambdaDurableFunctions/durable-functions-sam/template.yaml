@@ -1,0 +1,290 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Lambda Durable Functions Java Examples
+  Demonstrates chaining, fan-out/fan-in, human interaction, monitoring, timers,
+  error handling, map processing, and sub-orchestration patterns.
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Architectures:
+      - x86_64
+
+Parameters:
+  SNSTopicName:
+    Type: String
+    Description: Name of the SNS Topic used to trigger durable functions
+    Default: DurableFunctionsSNSTopic
+
+Resources:
+  # ECR Repository for the container image
+  DurableFunctionsECRRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: durable-functions-java-examples
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  # SNS Topic for triggering the durable functions
+  DurableFunctionsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref SNSTopicName
+
+  # DynamoDB table for storing results
+  DurableFunctionsDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: DurableFunctionsResultsTable
+      AttributeDefinitions:
+        - AttributeName: ExecutionId
+          AttributeType: S
+        - AttributeName: Timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ExecutionId
+          KeyType: HASH
+        - AttributeName: Timestamp
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  # IAM Role for Durable Lambda Functions
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-durable-function-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt DurableFunctionsDynamoDBTable.Arn
+                  - !Sub "${DurableFunctionsDynamoDBTable.Arn}/index/*"
+        - PolicyName: SNSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                  - sns:Subscribe
+                Resource: !Ref DurableFunctionsSNSTopic
+        - PolicyName: LambdaInvokeAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                  - lambda:SendDurableExecutionCallbackSuccess
+                  - lambda:SendDurableExecutionCallbackFailure
+                  - lambda:SendDurableExecutionCallbackHeartbeat
+                Resource: "*"
+
+  # Example 1: Chaining Pattern - Sequential steps with data passing
+  ChainingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-chaining-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.chaining.OrderProcessingHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - chaining
+
+  # Example 2: Fan-Out/Fan-In Pattern - Parallel processing
+  FanOutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-fanout-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.fanout.ParallelProcessingHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - fanout
+
+  # Example 3: Human Interaction Pattern - Callbacks
+  HumanInteractionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-human-interaction-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.humaninteraction.ApprovalWorkflowHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+          SNS_TOPIC_ARN: !Ref DurableFunctionsSNSTopic
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - approval
+
+  # Example 4: Monitoring/Polling Pattern - Wait for condition
+  MonitoringFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-monitoring-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.monitoring.JobMonitorHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - monitoring
+
+  # Example 5: Timer Pattern - Scheduled delays
+  TimerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-timer-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.timer.ScheduledReminderHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+          SNS_TOPIC_ARN: !Ref DurableFunctionsSNSTopic
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - timer
+
+  # Example 6: Error Handling Pattern - Retries and compensation
+  ErrorHandlingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-error-handling-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.errorhandling.ResilientPaymentHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - errorhandling
+
+  # Example 7: Map Processing Pattern - Collection processing
+  MapProcessingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-map-processing-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.mapprocessing.BatchDataProcessorHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - mapprocessing
+
+  # Example 8: Sub-Orchestration Pattern - Child contexts
+  SubOrchestrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: durable-sub-orchestration-example
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples:latest"
+      ImageConfig:
+        Command: ["com.amazonaws.samples.durable.suborchestration.OrderFulfillmentHandler::handleRequest"]
+      Role: !GetAtt DurableFunctionRole.Arn
+      Environment:
+        Variables:
+          DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref DurableFunctionsSNSTopic
+            FilterPolicy:
+              pattern:
+                - suborchestration
+
+Outputs:
+  SNSTopicArn:
+    Description: SNS Topic ARN for triggering durable functions
+    Value: !Ref DurableFunctionsSNSTopic
+  DynamoDBTableName:
+    Description: DynamoDB Table for storing results
+    Value: !Ref DurableFunctionsDynamoDBTable
+  ECRRepositoryUri:
+    Description: ECR Repository URI for container images
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/durable-functions-java-examples"

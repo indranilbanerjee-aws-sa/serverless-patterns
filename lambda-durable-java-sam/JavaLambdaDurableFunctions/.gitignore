@@ -1,0 +1,13 @@
+target/
+build/
+.aws-sam/
+*.class
+*.jar
+*.log
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+dependency-reduced-pom.xml
