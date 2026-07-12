@@ -58,7 +58,7 @@ public class OrderFulfillmentHandler extends DurableHandler<Map<String, Object>,
         );
 
         // Wait for both concurrent sub-workflows to complete
-        List<Object> results = DurableFuture.allOf(paymentFuture, inventoryFuture);
+        DurableFuture.allOf(paymentFuture, inventoryFuture);
         Map<String, Object> paymentResult = paymentFuture.get();
         Map<String, Object> inventoryResult = inventoryFuture.get();
 
