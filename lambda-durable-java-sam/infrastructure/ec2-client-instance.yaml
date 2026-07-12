@@ -234,7 +234,7 @@ Resources:
             cd ./serverless-patterns
             git sparse-checkout set --no-cone /lambda-durable-java-sam
             git checkout
-            cd lambda-durable-java-sam/JavaLambdaDurableFunctions
+            cd lambda-durable-java-sam
             sudo chown -R ec2-user .
 
             # Get IP CIDR range for EC2 Instance Connect

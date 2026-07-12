@@ -36,7 +36,13 @@ SNS Topic (Producer) --> Lambda Durable Functions (Consumers) --> DynamoDB (Resu
 
 ## Quick Start
 
-### 1. Deploy Infrastructure (Optional - for EC2 dev environment)
+You can run this project either from an EC2 instance (Option A) or from your local machine (Option B).
+
+### Option A: Using the EC2 Dev Environment
+
+The CloudFormation template deploys a VPC with a public subnet and an EC2 instance pre-configured with Java 21, Maven, Docker, AWS CLI v2, and SAM CLI. The project code is automatically cloned onto the instance.
+
+**1. Deploy the infrastructure stack:**
 
 ```bash
 aws cloudformation create-stack \
@@ -45,7 +51,44 @@ aws cloudformation create-stack \
   --capabilities CAPABILITY_NAMED_IAM
 ```
 
-### 2. Build the Durable Functions Container Image
+Wait for the stack to complete (~5 minutes):
+```bash
+aws cloudformation wait stack-create-complete --stack-name durable-functions-infra
+```
+
+**2. Connect to the instance via EC2 Instance Connect:**
+
+```bash
+INSTANCE_ID=$(aws cloudformation describe-stacks --stack-name durable-functions-infra \
+  --query 'Stacks[0].Outputs[?OutputKey==`EC2InstanceId`].OutputValue' --output text)
+aws ec2-instance-connect ssh --instance-id $INSTANCE_ID
+```
+
+**3. Navigate to the project directory:**
+
+```bash
+cd /home/ec2-user/serverless-patterns/lambda-durable-java-sam
+```
+
+Then continue from [Build and Deploy](#build-and-deploy) below.
+
+### Option B: Local Development
+
+Ensure you have Java 21+, Maven 3.8+, Docker, AWS CLI v2, and SAM CLI installed.
+
+Clone the project:
+```bash
+git clone https://github.com/aws-samples/serverless-patterns.git
+cd serverless-patterns/lambda-durable-java-sam
+```
+
+Then continue from [Build and Deploy](#build-and-deploy) below.
+
+---
+
+## Build and Deploy
+
+### 1. Build the Durable Functions Container Image
 
 ```bash
 cd durable-functions-sam/durable-functions
@@ -53,7 +96,7 @@ mvn clean package -DskipTests
 docker build -t durable-functions-java-examples .
 ```
 
-### 3. Push to ECR
+### 2. Push to ECR
 
 ```bash
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -73,21 +116,21 @@ docker push \
   $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/durable-functions-java-examples:latest
 ```
 
-### 4. Deploy with SAM
+### 3. Deploy with SAM
 
 ```bash
-cd durable-functions-sam
+cd ..
 sam deploy --guided
 ```
 
-### 5. Build the SNS Message Sender
+### 4. Build the SNS Message Sender
 
 ```bash
-cd sns-message-sender
+cd ../sns-message-sender
 mvn clean package
 ```
 
-### 6. Trigger a Durable Function
+### 5. Trigger a Durable Function
 
 ```bash
 java -cp target/sns-message-sender-1.0-SNAPSHOT.jar \
@@ -182,27 +225,29 @@ aws lambda get-durable-execution --function-name durable-chaining-example:1 --ex
 
 ```
 lambda-durable-java-sam/
-└── JavaLambdaDurableFunctions/
-    ├── README.md
-    ├── infrastructure/
-    │   └── ec2-client-instance.yaml      # VPC + EC2 CloudFormation template
-    ├── durable-functions-sam/
-    │   ├── template.yaml                  # SAM template for all Lambda functions
-    │   └── durable-functions/
-    │       ├── pom.xml
-    │       ├── Dockerfile
-    │       └── src/main/java/com/amazonaws/samples/durable/
-    │           ├── models/                # Shared model classes
-    │           ├── chaining/              # Pattern 1: Sequential steps
-    │           ├── fanout/                # Pattern 2: Parallel execution
-    │           ├── humaninteraction/      # Pattern 3: Callbacks
-    │           ├── monitoring/            # Pattern 4: Polling
-    │           ├── timer/                 # Pattern 5: Scheduled delays
-    │           ├── errorhandling/         # Pattern 6: Retries & compensation
-    │           ├── mapprocessing/         # Pattern 7: Collection processing
-    │           └── suborchestration/      # Pattern 8: Child contexts
-    └── sns-message-sender/
-        ├── pom.xml
-        └── src/main/java/sns/producer/
-            └── DurableFunctionsTrigger.java
+├── README.md
+├── USER_GUIDE.md
+├── DEVELOPER_GUIDE.md
+├── build-and-deploy.sh
+├── infrastructure/
+│   └── ec2-client-instance.yaml      # VPC + EC2 CloudFormation template
+├── durable-functions-sam/
+│   ├── template.yaml                  # SAM template for all Lambda functions
+│   └── durable-functions/
+│       ├── pom.xml
+│       ├── Dockerfile
+│       └── src/main/java/com/amazonaws/samples/durable/
+│           ├── models/                # Shared model classes
+│           ├── chaining/              # Pattern 1: Sequential steps
+│           ├── fanout/                # Pattern 2: Parallel execution
+│           ├── humaninteraction/      # Pattern 3: Callbacks
+│           ├── monitoring/            # Pattern 4: Polling
+│           ├── timer/                 # Pattern 5: Scheduled delays
+│           ├── errorhandling/         # Pattern 6: Retries & compensation
+│           ├── mapprocessing/         # Pattern 7: Collection processing
+│           └── suborchestration/      # Pattern 8: Child contexts
+└── sns-message-sender/
+    ├── pom.xml
+    └── src/main/java/sns/producer/
+        └── DurableFunctionsTrigger.java
 ```
