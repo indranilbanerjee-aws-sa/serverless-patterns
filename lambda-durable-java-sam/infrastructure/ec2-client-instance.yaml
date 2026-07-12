@@ -139,6 +139,17 @@ Resources:
                 fi
             done
 
+            # Set JAVA_HOME based on installed version
+            if [ "$JAVA_VERSION" == "java17" ]; then
+                JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto
+            else
+                JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
+            fi
+            echo "export JAVA_HOME=$JAVA_HOME" >> /home/ec2-user/.bash_profile
+            echo "export PATH=$JAVA_HOME/bin:\$PATH" >> /home/ec2-user/.bash_profile
+            export JAVA_HOME
+            export PATH=$JAVA_HOME/bin:$PATH
+
             max_attempts=5
             attempt_num=1
             success=false
@@ -283,7 +294,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSLambda_FullAccess
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess_v2
         - arn:aws:iam::aws:policy/AmazonSNSFullAccess
-        - arn:aws:iam::aws:policy/AmazonECR_FullAccess
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
       Policies:
         - PolicyName: SecurityGroupsPolicy
           PolicyDocument: !Sub '{
