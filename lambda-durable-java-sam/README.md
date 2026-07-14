@@ -119,40 +119,19 @@ docker push \
 
 ### 3. Deploy with SAM
 
+Delete any previously deployed stack first, then deploy:
+
 ```bash
-cd /home/ec2-user/serverless-patterns/lambda-durable-java-sam/durable-functions-sam 
+cd /home/ec2-user/serverless-patterns/lambda-durable-java-sam/durable-functions-sam
 (adjust the folder path for local deployment)
+
+aws cloudformation delete-stack --stack-name lambda-durable-java-sam
+aws cloudformation wait stack-delete-complete --stack-name lambda-durable-java-sam
+
 sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
-### 4. Enable Durable Execution on Each Function
-
-After SAM deploys the functions, enable durable execution on the published version:
-
-```bash
-FUNCTIONS=(
-  durable-chaining-example
-  durable-fanout-example
-  durable-human-interaction-example
-  durable-monitoring-example
-  durable-timer-example
-  durable-error-handling-example
-  durable-map-processing-example
-  durable-sub-orchestration-example
-)
-
-for FUNC in "${FUNCTIONS[@]}"; do
-  VERSION=$(aws lambda list-versions-by-function --function-name $FUNC \
-    --query 'Versions[-1].Version' --output text)
-  aws lambda put-function-durable-execution-config \
-    --function-name $FUNC \
-    --qualifier $VERSION \
-    --durable-execution-config '{"Enabled": true, "MaxConcurrency": 10}'
-  echo "Enabled durable execution on $FUNC:$VERSION"
-done
-```
-
-### 5. Build the SNS Message Sender
+### 4. Build the SNS Message Sender
 
 ```bash
 cd ../sns-message-sender
