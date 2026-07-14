@@ -102,6 +102,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.chaining.OrderProcessingHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -124,6 +128,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.fanout.ParallelProcessingHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -146,6 +154,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.humaninteraction.ApprovalWorkflowHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -169,6 +181,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.monitoring.JobMonitorHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -191,6 +207,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.timer.ScheduledReminderHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -214,6 +234,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.errorhandling.ResilientPaymentHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -236,6 +260,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.mapprocessing.BatchDataProcessorHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable
@@ -258,6 +286,10 @@ Resources:
       ImageConfig:
         Command: ["com.amazonaws.samples.durable.suborchestration.OrderFulfillmentHandler::handleRequest"]
       Role: !GetAtt DurableFunctionRole.Arn
+      AutoPublishAlias: live
+      DurableExecution:
+        Enabled: true
+        MaxConcurrency: 10
       Environment:
         Variables:
           DYNAMO_DB_TABLE: !Ref DurableFunctionsDynamoDBTable

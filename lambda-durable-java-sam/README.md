@@ -106,7 +106,8 @@ aws ecr get-login-password --region $AWS_REGION \
   | docker login --username AWS --password-stdin \
     $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-# Create the repository (first time only)
+# Delete the repository if it already exists, then recreate it
+aws ecr delete-repository --repository-name durable-functions-java-examples --force 2>/dev/null
 aws ecr create-repository --repository-name durable-functions-java-examples
 
 docker tag durable-functions-java-examples:latest \
