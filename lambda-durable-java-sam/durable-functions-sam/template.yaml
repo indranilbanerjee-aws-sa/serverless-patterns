@@ -19,14 +19,6 @@ Parameters:
     Default: DurableFunctionsSNSTopic
 
 Resources:
-  # ECR Repository for the container image
-  DurableFunctionsECRRepo:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: durable-functions-java-examples
-      ImageScanningConfiguration:
-        ScanOnPush: true
-
   # SNS Topic for triggering the durable functions
   DurableFunctionsSNSTopic:
     Type: AWS::SNS::Topic

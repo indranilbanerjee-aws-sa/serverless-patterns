@@ -100,7 +100,7 @@ docker build -t durable-functions-java-examples .
 
 ```bash
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=$(aws configure get region)
+AWS_REGION=${AWS_REGION:-$(aws configure get region)}
 
 aws ecr get-login-password --region $AWS_REGION \
   | docker login --username AWS --password-stdin \
@@ -119,8 +119,9 @@ docker push \
 ### 3. Deploy with SAM
 
 ```bash
-cd ..
-sam deploy --guided
+cd /home/ec2-user/serverless-patterns/lambda-durable-java-sam/durable-functions-sam 
+(adjust the folder path for local deployment)
+sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
 ### 4. Build the SNS Message Sender
