@@ -4,6 +4,10 @@
 
 Welcome to the **AWS Lambda Durable Functions in Java** workshop! In this workshop, you will learn how to build resilient, long-running workflows using Lambda Durable Functions. You'll deploy and run eight different patterns that demonstrate the full capability of durable execution in Java.
 
+### Visual Step Diagrams
+
+To see the visual flow of each pattern, refer to [DIAGRAMS.md](DIAGRAMS.md).
+
 ### What are Lambda Durable Functions?
 
 Lambda Durable Functions enable you to build multi-step applications that can execute for up to **one year** while maintaining reliable progress despite interruptions. Key capabilities:
@@ -102,15 +106,16 @@ docker build -t durable-functions-java-examples .
 
 ```bash
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=$(aws configure get region)
-
-# Create repository
-aws ecr create-repository --repository-name durable-functions-java-examples
+AWS_REGION=${AWS_REGION:-$(aws configure get region)}
 
 # Login to ECR
 aws ecr get-login-password --region $AWS_REGION \
   | docker login --username AWS --password-stdin \
     $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+# Delete the repository if it already exists, then recreate it
+aws ecr delete-repository --repository-name durable-functions-java-examples --force 2>/dev/null
+aws ecr create-repository --repository-name durable-functions-java-examples
 
 # Tag and push
 docker tag durable-functions-java-examples:latest \
@@ -124,7 +129,7 @@ docker push \
 
 ```bash
 cd ..
-sam deploy --guided
+sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
 Accept the defaults or customize:
@@ -132,6 +137,12 @@ Accept the defaults or customize:
 - Region: your preferred region
 - Confirm changeset: Yes
 - Allow SAM CLI to create IAM roles: Yes
+
+> **Note:** If redeploying, delete the existing stack first since durable execution config cannot be added to existing functions:
+> ```bash
+> aws cloudformation delete-stack --stack-name durable-functions-java-examples
+> aws cloudformation wait stack-delete-complete --stack-name durable-functions-java-examples
+> ```
 
 ### Step 5: Build the SNS message sender
 

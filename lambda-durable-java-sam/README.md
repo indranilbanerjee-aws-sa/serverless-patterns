@@ -44,25 +44,20 @@ The CloudFormation template deploys a VPC with a public subnet and an EC2 instan
 
 **1. Deploy the infrastructure stack:**
 
-```bash
-aws cloudformation create-stack \
-  --stack-name durable-functions-infra \
-  --template-body file://infrastructure/ec2-client-instance.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
-```
-
-Wait for the stack to complete (~5 minutes):
-```bash
-aws cloudformation wait stack-create-complete --stack-name durable-functions-infra
-```
+1. Open the [AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/)
+2. Click **Create stack** > **With new resources (standard)**
+3. Select **Upload a template file**, then upload `infrastructure/ec2-client-instance.yaml`
+4. Enter stack name: `durable-functions-infra`
+5. Click **Next** through the options, check **I acknowledge that AWS CloudFormation might create IAM resources with custom names**, then click **Submit**
+6. Wait for the stack status to reach **CREATE_COMPLETE** (~5 minutes)
 
 **2. Connect to the instance via EC2 Instance Connect:**
 
-```bash
-INSTANCE_ID=$(aws cloudformation describe-stacks --stack-name durable-functions-infra \
-  --query 'Stacks[0].Outputs[?OutputKey==`EC2InstanceId`].OutputValue' --output text)
-aws ec2-instance-connect ssh --instance-id $INSTANCE_ID
-```
+1. Open the [AWS EC2 console](https://console.aws.amazon.com/ec2/)
+2. Click **Instances** in the left navigation
+3. Select the instance named `DurableFunctionsDevInstance` (created by the stack)
+4. Click **Connect** at the top
+5. On the **EC2 Instance Connect** tab, click **Connect**
 
 **3. Navigate to the project directory:**
 
@@ -197,6 +192,10 @@ aws lambda send-durable-execution-callback-failure \
   --callback-id <CALLBACK_ID_FROM_LOGS> \
   --error ErrorType=Rejected,ErrorMessage="Budget exceeded policy limit"
 ```
+
+## Step Diagrams
+
+For visual step-by-step flow diagrams of each pattern, see [DIAGRAMS.md](DIAGRAMS.md).
 
 ## Key Concepts
 

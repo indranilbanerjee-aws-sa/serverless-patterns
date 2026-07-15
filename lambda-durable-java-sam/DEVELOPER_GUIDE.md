@@ -13,6 +13,8 @@
 9. [Testing](#testing)
 10. [Common Pitfalls](#common-pitfalls)
 
+> **Tip:** For visual step-by-step flow diagrams of each pattern, see [DIAGRAMS.md](DIAGRAMS.md).
+
 ---
 
 ## Architecture Overview

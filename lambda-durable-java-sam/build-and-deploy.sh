@@ -6,7 +6,7 @@ echo "  Lambda Durable Functions Java - Build and Deploy"
 echo "============================================================"
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=$(aws configure get region)
+AWS_REGION=${AWS_REGION:-$(aws configure get region)}
 ECR_REPO="durable-functions-java-examples"
 IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest"
 
@@ -28,10 +28,12 @@ echo ">>> Step 2: Building Docker image..."
 docker build -t $ECR_REPO .
 echo "    Docker image built."
 
-# Step 3: Create ECR repository (ignore error if exists)
+# Step 3: Delete and recreate ECR repository
 echo ""
-echo ">>> Step 3: Ensuring ECR repository exists..."
-aws ecr create-repository --repository-name $ECR_REPO 2>/dev/null || echo "    Repository already exists."
+echo ">>> Step 3: Recreating ECR repository..."
+aws ecr delete-repository --repository-name $ECR_REPO --force 2>/dev/null || true
+aws ecr create-repository --repository-name $ECR_REPO
+echo "    Repository created."
 
 # Step 4: Login to ECR and push
 echo ""
