@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableHandler;
 import software.amazon.lambda.durable.config.CompletionConfig;
@@ -29,7 +30,8 @@ import software.amazon.lambda.durable.model.MapResult;
 public class BatchDataProcessorHandler extends DurableHandler<Map<String, Object>, Map<String, Object>> {
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting batch data processing");
 
         int batchSize = ((Number) event.getOrDefault("batchSize", 10)).intValue();

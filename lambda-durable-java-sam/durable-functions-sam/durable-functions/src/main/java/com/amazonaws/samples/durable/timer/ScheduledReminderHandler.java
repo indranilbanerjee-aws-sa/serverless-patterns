@@ -3,6 +3,7 @@ package com.amazonaws.samples.durable.timer;
 import java.time.Duration;
 import java.util.Map;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableFuture;
 import software.amazon.lambda.durable.DurableHandler;
@@ -25,7 +26,8 @@ import software.amazon.lambda.durable.DurableHandler;
 public class ScheduledReminderHandler extends DurableHandler<Map<String, Object>, Map<String, Object>> {
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting scheduled reminder workflow");
 
         String taskId = (String) event.getOrDefault("taskId", "TASK-001");

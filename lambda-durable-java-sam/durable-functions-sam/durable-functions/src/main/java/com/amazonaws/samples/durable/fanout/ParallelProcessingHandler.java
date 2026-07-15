@@ -3,6 +3,7 @@ package com.amazonaws.samples.durable.fanout;
 import java.util.List;
 import java.util.Map;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableFuture;
 import software.amazon.lambda.durable.DurableHandler;
@@ -23,7 +24,8 @@ import software.amazon.lambda.durable.model.ParallelResult;
 public class ParallelProcessingHandler extends DurableHandler<Map<String, Object>, Map<String, Object>> {
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting fan-out/fan-in processing");
 
         String dataId = (String) event.getOrDefault("dataId", "DATA-001");

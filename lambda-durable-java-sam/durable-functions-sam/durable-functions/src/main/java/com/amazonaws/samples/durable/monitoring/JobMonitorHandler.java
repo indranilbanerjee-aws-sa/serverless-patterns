@@ -3,6 +3,7 @@ package com.amazonaws.samples.durable.monitoring;
 import java.time.Duration;
 import java.util.Map;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableHandler;
 import software.amazon.lambda.durable.TypeToken;
@@ -28,7 +29,8 @@ public class JobMonitorHandler extends DurableHandler<Map<String, Object>, Map<S
     private static int pollCount = 0;
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting job monitor");
 
         String jobId = (String) event.getOrDefault("jobId", "JOB-" + System.currentTimeMillis());

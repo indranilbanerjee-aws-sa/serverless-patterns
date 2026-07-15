@@ -1,14 +1,14 @@
 package com.amazonaws.samples.durable.chaining;
 
 import java.util.Map;
+import java.time.Duration;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableHandler;
 import software.amazon.lambda.durable.config.StepConfig;
 import software.amazon.lambda.durable.retry.RetryStrategies;
 import software.amazon.lambda.durable.retry.JitterStrategy;
-
-import java.time.Duration;
 
 /**
  * PATTERN: Function Chaining
@@ -23,7 +23,8 @@ import java.time.Duration;
 public class OrderProcessingHandler extends DurableHandler<Map<String, Object>, Map<String, Object>> {
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting order processing chain for: " + event.get("orderId"));
 
         StepConfig retryConfig = StepConfig.builder()

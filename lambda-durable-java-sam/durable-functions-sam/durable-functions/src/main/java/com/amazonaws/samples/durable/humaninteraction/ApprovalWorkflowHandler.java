@@ -3,6 +3,7 @@ package com.amazonaws.samples.durable.humaninteraction;
 import java.time.Duration;
 import java.util.Map;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableCallbackFuture;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableHandler;
@@ -34,7 +35,8 @@ import software.amazon.lambda.durable.exception.CallbackFailedException;
 public class ApprovalWorkflowHandler extends DurableHandler<Map<String, Object>, Map<String, Object>> {
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting approval workflow");
 
         String requestId = (String) event.getOrDefault("requestId", "REQ-" + System.currentTimeMillis());

@@ -3,6 +3,7 @@ package com.amazonaws.samples.durable.errorhandling;
 import java.time.Duration;
 import java.util.Map;
 
+import com.amazonaws.samples.durable.models.SnsEventParser;
 import software.amazon.lambda.durable.DurableContext;
 import software.amazon.lambda.durable.DurableHandler;
 import software.amazon.lambda.durable.config.StepConfig;
@@ -30,7 +31,8 @@ import software.amazon.lambda.durable.retry.RetryStrategy;
 public class ResilientPaymentHandler extends DurableHandler<Map<String, Object>, Map<String, Object>> {
 
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> event, DurableContext context) {
+    public Map<String, Object> handleRequest(Map<String, Object> rawEvent, DurableContext context) {
+        Map<String, Object> event = SnsEventParser.extractMessage(rawEvent);
         context.getLogger().info("Starting resilient payment workflow");
 
         String orderId = (String) event.getOrDefault("orderId", "ORD-001");
