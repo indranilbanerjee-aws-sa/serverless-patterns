@@ -71,7 +71,28 @@ Then continue from [Build and Deploy](#build-and-deploy) below.
 
 Ensure you have Java 21+, Maven 3.8+, Docker, AWS CLI v2, and SAM CLI installed.
 
-Clone the project:
+**1. Configure your AWS credentials and region:**
+
+If you don't have an AWS CLI profile configured, create one pointing to the account where you want to deploy:
+
+```bash
+aws configure
+```
+
+If you have multiple profiles, set your desired profile as the default for this shell session:
+
+```bash
+export AWS_PROFILE=your-profile-name
+```
+
+Set the AWS region where you want to deploy the pattern:
+
+```bash
+export AWS_REGION=us-east-1  # Change to your preferred region
+```
+
+**2. Clone the project:**
+
 ```bash
 git clone https://github.com/aws-samples/serverless-patterns.git
 cd serverless-patterns/lambda-durable-java-sam
