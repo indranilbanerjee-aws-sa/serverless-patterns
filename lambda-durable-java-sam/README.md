@@ -71,7 +71,39 @@ Then continue from [Build and Deploy](#build-and-deploy) below.
 
 Ensure you have Java 21+, Maven 3.8+, Docker, AWS CLI v2, and SAM CLI installed.
 
-**1. Configure your AWS credentials and region:**
+**1. Set JAVA_HOME:**
+
+Ensure `JAVA_HOME` points to your Java 21 installation directory (not the `bin` subdirectory):
+
+**macOS (zsh/bash):**
+```bash
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-21.jdk/Contents/Home
+```
+
+**Linux (bash):**
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
+```
+
+**Windows (PowerShell):**
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Amazon Corretto\jdk21.0.x_x"
+```
+
+**Windows (Command Prompt):**
+```cmd
+set JAVA_HOME=C:\Program Files\Amazon Corretto\jdk21.0.x_x
+```
+
+Verify it's correct:
+```bash
+echo $JAVA_HOME              # Should NOT end with /bin
+$JAVA_HOME/bin/java -version # Should print Java 21
+```
+
+Add the export to your shell profile (`~/.zshrc`, `~/.bashrc`, or Windows System Environment Variables) to persist across sessions.
+
+**2. Configure your AWS credentials and region:**
 
 If you don't have an AWS CLI profile configured, create one pointing to the account where you want to deploy:
 
@@ -81,17 +113,25 @@ aws configure
 
 If you have multiple profiles, set your desired profile as the default for this shell session:
 
+**macOS/Linux:**
 ```bash
 export AWS_PROFILE=your-profile-name
-```
-
-Set the AWS region where you want to deploy the pattern:
-
-```bash
 export AWS_REGION=us-east-1  # Change to your preferred region
 ```
 
-**2. Clone the project:**
+**Windows (PowerShell):**
+```powershell
+$env:AWS_PROFILE = "your-profile-name"
+$env:AWS_REGION = "us-east-1"  # Change to your preferred region
+```
+
+**Windows (Command Prompt):**
+```cmd
+set AWS_PROFILE=your-profile-name
+set AWS_REGION=us-east-1
+```
+
+**3. Clone the project:**
 
 ```bash
 git clone https://github.com/aws-samples/serverless-patterns.git
@@ -109,8 +149,25 @@ Then continue from [Build and Deploy](#build-and-deploy) below.
 ```bash
 cd durable-functions-sam/durable-functions
 mvn clean package -DskipTests
+```
+
+Build the Docker image. Use the command that matches your environment:
+
+**From EC2 instance (Amazon Linux x86_64):**
+```bash
 docker build -t durable-functions-java-examples .
 ```
+
+**From local machine (macOS, Linux, or Windows with Docker Desktop):**
+```bash
+docker build --platform linux/amd64 --provenance=false -t durable-functions-java-examples .
+```
+
+> **Why these flags?**
+> - `--platform linux/amd64` — Lambda runs on x86_64. Required on Apple Silicon Macs (M1/M2/M3/M4) to avoid building an ARM image. Harmless on x86_64 machines.
+> - `--provenance=false` — Required on **all platforms** with Docker BuildKit (Docker 23+). Prevents Docker from producing OCI image indexes. Lambda only supports Docker V2 manifest format. Without this flag you'll see: *"The image manifest, config or layer media type... is not supported."*
+>
+> **Tip:** If you're unsure which platform you're on, always use the local machine command — it works everywhere.
 
 ### 2. Push to ECR
 
@@ -118,6 +175,11 @@ docker build -t durable-functions-java-examples .
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 AWS_REGION=${AWS_REGION:-$(aws configure get region)}
 
+# Verify variables are set correctly before proceeding
+echo "Account: $AWS_ACCOUNT_ID"
+echo "Region:  $AWS_REGION"
+
+# Login to ECR
 aws ecr get-login-password --region $AWS_REGION \
   | docker login --username AWS --password-stdin \
     $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
@@ -126,6 +188,7 @@ aws ecr get-login-password --region $AWS_REGION \
 aws ecr delete-repository --repository-name durable-functions-java-examples --force 2>/dev/null
 aws ecr create-repository --repository-name durable-functions-java-examples
 
+# Tag and push
 docker tag durable-functions-java-examples:latest \
   $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/durable-functions-java-examples:latest
 
@@ -133,19 +196,51 @@ docker push \
   $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/durable-functions-java-examples:latest
 ```
 
+> **Checkpoint:** Before continuing, verify the push succeeded and the image has the correct manifest type:
+> ```bash
+> aws ecr describe-images --repository-name durable-functions-java-examples --region $AWS_REGION \
+>   --query 'imageDetails[?imageTags[0]==`latest`].imageManifestMediaType' --output text
+> ```
+> Expected output: `application/vnd.docker.distribution.manifest.v2+json`
+>
+> If you see `application/vnd.oci.image.index.v1+json` instead, rebuild the Docker image with `--provenance=false` and push again.
+
 ### 3. Deploy with SAM
 
-Delete any previously deployed stack first, then deploy:
+Navigate to the SAM template directory:
 
+**From EC2:**
 ```bash
 cd /home/ec2-user/serverless-patterns/lambda-durable-java-sam/durable-functions-sam
-(adjust the folder path for local deployment)
+```
 
-aws cloudformation delete-stack --stack-name lambda-durable-java-sam
-aws cloudformation wait stack-delete-complete --stack-name lambda-durable-java-sam
+**From local machine:**
+```bash
+cd ../..
+cd durable-functions-sam
+```
 
+If you have a previously deployed stack, delete it first (durable execution config cannot be added to existing functions):
+```bash
+aws cloudformation delete-stack --stack-name <your-stack-name>
+aws cloudformation wait stack-delete-complete --stack-name <your-stack-name>
+```
+
+Deploy:
+```bash
 sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
+
+When prompted:
+- **Stack Name**: choose a name (e.g., `lambda-durable-java-sam`)
+- **AWS Region**: enter your region (must match where you pushed the ECR image)
+- **Parameter SNSTopicName**: press Enter to accept default
+- **Confirm changes before deploy**: `N`
+- **Allow SAM CLI IAM role creation**: `Y`
+- **Disable rollback**: `N`
+- **Save arguments to configuration file**: `Y`
+
+Wait for `CREATE_COMPLETE`. If it fails, check the [Troubleshooting](#troubleshooting) section below.
 
 ### 4. Build the SNS Message Sender
 
@@ -159,6 +254,55 @@ mvn clean package
 ```bash
 java -cp target/sns-message-sender-1.0-SNAPSHOT.jar \
   sns.producer.DurableFunctionsTrigger DurableFunctionsSNSTopic chaining
+```
+
+---
+
+## Troubleshooting
+
+### "The image manifest, config or layer media type... is not supported"
+
+The Docker image was pushed in OCI format. Lambda requires Docker V2 format. Fix:
+```bash
+docker build --platform linux/amd64 --provenance=false -t durable-functions-java-examples .
+aws ecr delete-repository --repository-name durable-functions-java-examples --force
+aws ecr create-repository --repository-name durable-functions-java-examples
+docker tag durable-functions-java-examples:latest \
+  $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/durable-functions-java-examples:latest
+docker push \
+  $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/durable-functions-java-examples:latest
+```
+
+### "JAVA_HOME environment variable is not defined correctly"
+
+`JAVA_HOME` must point to the JDK root (e.g., `.../Contents/Home`), **not** the `bin` directory. Fix:
+```bash
+# Wrong:
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-21.jdk/Contents/Home/bin
+
+# Correct:
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-21.jdk/Contents/Home
+```
+
+### "Cannot connect to the Docker daemon"
+
+Docker is not running. Start your Docker runtime:
+- **Docker Desktop**: Open Docker Desktop from Applications
+- **Colima**: `colima start && docker context use colima`
+
+### AWS_REGION is empty / ECR endpoint errors
+
+Ensure `AWS_REGION` is set before running the commands:
+```bash
+export AWS_REGION=eu-west-2  # Your target region
+```
+
+### Stack stuck in ROLLBACK_COMPLETE
+
+Delete the failed stack before redeploying:
+```bash
+aws cloudformation delete-stack --stack-name <your-stack-name>
+aws cloudformation wait stack-delete-complete --stack-name <your-stack-name>
 ```
 
 ## Triggering Each Pattern

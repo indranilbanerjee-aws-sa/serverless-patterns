@@ -99,8 +99,10 @@ You should see `BUILD SUCCESS`.
 ### Step 2: Build the Docker container image
 
 ```bash
-docker build -t durable-functions-java-examples .
+docker build --platform linux/amd64 --provenance=false -t durable-functions-java-examples .
 ```
+
+> **Note:** The `--platform linux/amd64` flag is required when building on Apple Silicon (M1/M2/M3) Macs. The `--provenance=false` flag ensures the image is pushed in Docker V2 manifest format rather than OCI format, which Lambda requires.
 
 ### Step 3: Create ECR repository and push
 

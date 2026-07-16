@@ -25,7 +25,7 @@ echo "    Build complete."
 # Step 2: Build Docker image
 echo ""
 echo ">>> Step 2: Building Docker image..."
-docker build -t $ECR_REPO .
+docker build --platform linux/amd64 --provenance=false -t $ECR_REPO .
 echo "    Docker image built."
 
 # Step 3: Delete and recreate ECR repository
