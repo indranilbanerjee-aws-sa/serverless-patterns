@@ -254,10 +254,14 @@ mvn clean package
 
 ### 5. Trigger a Durable Function
 
+Ensure `AWS_PROFILE` and `AWS_REGION` are set to the same profile/region you used for deployment (see Step 2 under Option B), then run:
+
 ```bash
 java -cp target/sns-message-sender-1.0-SNAPSHOT.jar \
   sns.producer.DurableFunctionsTrigger DurableFunctionsSNSTopic chaining
 ```
+
+> **Note:** On the EC2 instance (Option A), credentials are provided automatically via the instance role — no extra setup needed. If you get credential errors locally, see the [Troubleshooting](#troubleshooting) section.
 
 ---
 
@@ -299,6 +303,26 @@ Ensure `AWS_REGION` is set before running the commands:
 ```bash
 export AWS_REGION=eu-west-2  # Your target region
 ```
+
+### "Unable to load credentials from any of the providers in the chain" when triggering patterns
+
+The Java AWS SDK cannot find valid credentials. Common causes and fixes:
+
+1. **`AWS_PROFILE` not set** — The Java SDK uses the `default` profile unless told otherwise:
+   ```bash
+   export AWS_PROFILE=your-profile-name
+   ```
+
+2. **Profile uses `credential_process` or SSO** — Some credential sources (e.g., `credential_process`, `aws sso`) may not be compatible with all versions of the Java AWS SDK. Resolve by exporting credentials into the environment:
+   ```bash
+   eval $(aws configure export-credentials --profile your-profile --format env)
+   ```
+
+3. **Verify credentials work** — Test that the Java SDK can reach AWS:
+   ```bash
+   aws sts get-caller-identity
+   ```
+   If this works but the Java app doesn't, your profile likely uses a credential method the Java SDK can't invoke. Use the `eval` command above.
 
 ### Stack stuck in ROLLBACK_COMPLETE
 
