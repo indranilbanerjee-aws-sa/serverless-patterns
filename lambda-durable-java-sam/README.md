@@ -134,8 +134,11 @@ set AWS_REGION=us-east-1
 **3. Clone the project:**
 
 ```bash
-git clone https://github.com/aws-samples/serverless-patterns.git
-cd serverless-patterns/lambda-durable-java-sam
+git clone --depth 1 --filter=blob:none --sparse \
+  https://github.com/aws-samples/serverless-patterns.git
+cd serverless-patterns
+git sparse-checkout set lambda-durable-java-sam
+cd lambda-durable-java-sam
 ```
 
 Then continue from [Build and Deploy](#build-and-deploy) below.
