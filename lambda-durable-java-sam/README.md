@@ -1,4 +1,4 @@
-# Java Lambda Durable Functions - Workshop Examples
+# Java Lambda Durable Functions Examples
 
 This project demonstrates **AWS Lambda Durable Functions** patterns in Java. It provides working examples of all major durable execution patterns including chaining, fan-out/fan-in, human interaction, monitoring/polling, timers, error handling with saga compensation, map processing, and sub-orchestration.
 
@@ -151,7 +151,7 @@ Then continue from [Build and Deploy](#build-and-deploy) below.
 
 ```bash
 cd durable-functions-sam/durable-functions
-mvn clean package -DskipTests
+mvn clean package
 ```
 
 Build the Docker image. Use the command that matches your environment:

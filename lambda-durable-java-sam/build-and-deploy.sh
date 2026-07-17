@@ -19,7 +19,7 @@ echo ""
 # Step 1: Build the durable functions JAR
 echo ">>> Step 1: Building durable functions JAR..."
 cd durable-functions-sam/durable-functions
-mvn clean package -DskipTests
+mvn clean package
 echo "    Build complete."
 
 # Step 2: Build Docker image
@@ -61,7 +61,7 @@ sam deploy \
 echo ""
 echo ">>> Step 6: Building SNS message sender..."
 cd ../sns-message-sender
-mvn clean package -DskipTests
+mvn clean package
 echo "    SNS sender built."
 
 echo ""

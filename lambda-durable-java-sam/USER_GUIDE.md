@@ -91,7 +91,7 @@ cd serverless-patterns/lambda-durable-java-sam
 
 ```bash
 cd durable-functions-sam/durable-functions
-mvn clean package -DskipTests
+mvn clean package
 ```
 
 You should see `BUILD SUCCESS`.
